@@ -12,6 +12,12 @@ This script tests a single Feetech motor by:
 import argparse
 import sys
 import time
+from pathlib import Path
+
+# Add scripts directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent))
+
+from motor_interface import FeetechMotorInterface
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -19,45 +25,98 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 
 console = Console()
 
+# Global motor interface instance
+motor_interface = None
+
 
 def test_motor_communication(port, motor_id):
     """Test basic communication with motor."""
+    global motor_interface
+    
     try:
-        # This is a placeholder - actual implementation depends on SDK
-        console.print(f"[yellow]Testing communication with motor {motor_id}...[/yellow]")
+        console.print(f"[yellow]Connecting to port {port}...[/yellow]")
         
-        # Import appropriate motor control library
-        # Note: Actual implementation will use lerobot or feetech-servo-sdk
+        # Initialize motor interface
+        motor_interface = FeetechMotorInterface(port)
+        
+        if not motor_interface.connect():
+            console.print("[red]✗ Failed to open serial port[/red]")
+            return False
+        
+        console.print(f"[yellow]Pinging motor {motor_id}...[/yellow]")
+        
+        # Ping motor to check communication
+        if not motor_interface.ping(motor_id):
+            console.print(f"[red]✗ Motor {motor_id} not responding[/red]")
+            return False
         
         console.print("[green]✓ Motor communication established[/green]")
+        
+        # Set operation mode to position control
+        console.print(f"[yellow]Setting operation mode to position control...[/yellow]")
+        if motor_interface.set_operation_mode(motor_id, 0):
+            console.print("[green]✓ Operation mode set[/green]")
+        else:
+            console.print("[yellow]⚠ Could not set operation mode[/yellow]")
+        
+        # Enable torque
+        console.print(f"[yellow]Enabling torque on motor {motor_id}...[/yellow]")
+        if motor_interface.enable_torque(motor_id):
+            console.print("[green]✓ Torque enabled[/green]")
+        else:
+            console.print("[yellow]⚠ Could not enable torque[/yellow]")
+        
         return True
     except Exception as e:
         console.print(f"[red]✗ Communication failed: {e}[/red]")
+        import traceback
+        console.print(f"[dim]{traceback.format_exc()}[/dim]")
         return False
 
 
 def read_motor_state(port, motor_id):
     """Read current motor state."""
-    # Placeholder for actual motor reading
-    # In real implementation, this would use the SDK to read:
-    # - Position
-    # - Temperature
-    # - Voltage
-    # - Current
-    # - Load
+    global motor_interface
     
-    return {
-        "position": 2048,
-        "temperature": 35,
-        "voltage": 12.1,
-        "current": 150,
-        "load": 20
-    }
+    if motor_interface is None:
+        console.print("[red]Motor interface not initialized[/red]")
+        return None
+    
+    try:
+        # Read all motor data
+        data = motor_interface.read_all_data(motor_id)
+        
+        if data is None:
+            console.print(f"[red]✗ Failed to read from motor {motor_id}[/red]")
+            return {
+                "position": 0,
+                "temperature": 0,
+                "voltage": 0.0,
+                "current": 0,
+                "load": 0
+            }
+        
+        return data
+    except Exception as e:
+        console.print(f"[red]Error reading motor state: {e}[/red]")
+        return {
+            "position": 0,
+            "temperature": 0,
+            "voltage": 0.0,
+            "current": 0,
+            "load": 0
+        }
 
 
 def test_motor_movement(port, motor_id):
     """Test motor movement through a sequence."""
+    global motor_interface
+    
     console.print("\n[bold]Testing motor movement...[/bold]")
+    
+    if motor_interface is None:
+        console.print("[red]Motor interface not initialized[/red]")
+        return False
     
     # Test positions (center, left, right, center)
     positions = [2048, 1024, 3072, 2048]
@@ -72,13 +131,31 @@ def test_motor_movement(port, motor_id):
         for pos, name in zip(positions, position_names):
             task = progress.add_task(f"Moving to {name} ({pos})...", total=None)
             
-            # Placeholder for actual motor command
-            # In real implementation:
-            # motor.move_to_position(pos, speed=1000)
-            time.sleep(1.5)  # Simulate movement time
+            # Write goal position to motor
+            if not motor_interface.write_position(motor_id, pos):
+                console.print(f"[red]✗ Failed to send position command[/red]")
+                continue
+            
+            # Wait for motor to reach position
+            timeout = 3.0  # seconds
+            start_time = time.time()
+            reached = False
+            
+            while (time.time() - start_time) < timeout:
+                current_pos = motor_interface.read_position(motor_id)
+                if current_pos is not None:
+                    # Check if close enough to target (within 20 units tolerance)
+                    if abs(current_pos - pos) < 20:
+                        reached = True
+                        break
+                time.sleep(0.1)
             
             progress.update(task, completed=True)
-            console.print(f"[green]✓ Reached {name}[/green]")
+            
+            if reached:
+                console.print(f"[green]✓ Reached {name}[/green]")
+            else:
+                console.print(f"[yellow]⚠ Timeout reaching {name}[/yellow]")
     
     return True
 
@@ -183,6 +260,12 @@ def main():
     console.print("\n[bold]Next steps:[/bold]")
     console.print(f"  • Test another motor: python scripts/03_test_single_motor.py --port {args.port} --motor_id <id>")
     console.print(f"  • Test all motors: python scripts/04_test_all_motors.py --port {args.port}")
+    
+    # Cleanup
+    if motor_interface:
+        console.print("\n[yellow]Disconnecting...[/yellow]")
+        motor_interface.disconnect()
+        console.print("[green]✓ Disconnected[/green]")
 
 
 if __name__ == "__main__":
@@ -190,10 +273,14 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         console.print("\n\n[yellow]Test interrupted by user[/yellow]")
+        if motor_interface:
+            motor_interface.disconnect()
         sys.exit(0)
     except Exception as e:
         console.print(f"\n[bold red]Error: {e}[/bold red]")
         import traceback
         console.print(traceback.format_exc())
+        if motor_interface:
+            motor_interface.disconnect()
         sys.exit(1)
 
