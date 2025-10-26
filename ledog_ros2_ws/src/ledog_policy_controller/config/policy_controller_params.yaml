@@ -1,0 +1,23 @@
+# LeRobot Policy Controller - Example Parameters
+#
+# This file contains example parameters for the policy controller node.
+# Copy and modify as needed for your specific setup.
+#
+# Usage:
+#   ros2 run ledog_policy_controller policy_controller_node \
+#       --ros-args --params-file config/policy_controller_params.yaml
+
+policy_controller_node:
+  ros__parameters:
+    # Conda environment configuration
+    conda_env_name: "lerobot"
+    conda_base_path: "~/anaconda3"  # Change to ~/miniconda3 if using miniconda
+    
+    # Process management
+    shutdown_timeout: 5.0  # Seconds to wait before force kill
+    
+    # Robot configuration (currently not used in command, but available)
+    robot_id: "follower_1"
+    robot_port: "/dev/ttyACM0"
+    robot_type: "so100_follower"
+
