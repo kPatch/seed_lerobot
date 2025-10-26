@@ -273,12 +273,13 @@ lerobot-record \
         
         try:
             # Start the process with new session to allow process group killing
+            # Redirect stderr to stdout so we can stream both together
             self.process = subprocess.Popen(
                 cmd,
                 shell=True,
                 start_new_session=True,  # Create new process group for proper cleanup
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                stderr=subprocess.STDOUT,  # Redirect stderr to stdout for unified streaming
                 text=True,
                 bufsize=1,  # Line buffered
                 universal_newlines=True
@@ -287,31 +288,34 @@ lerobot-record \
             pgid = os.getpgid(self.process.pid)
             self.get_logger().info(f'LeRobot policy started with PID: {self.process.pid}, PGID: {pgid}')
             
-            # Stream output to ROS logs
+            # Stream output to ROS logs in real-time
+            # This captures both stdout and stderr (warnings + errors + normal output)
             # Note: This will block until process completes
             for line in iter(self.process.stdout.readline, ''):
                 if line:
-                    self.get_logger().info(f'[LeRobot] {line.rstrip()}')
+                    line_stripped = line.rstrip()
+                    # Log warnings appropriately, not as errors
+                    if 'WARNING' in line_stripped or 'Warning' in line_stripped:
+                        self.get_logger().warn(f'[LeRobot] {line_stripped}')
+                    elif 'ERROR' in line_stripped or 'Error' in line_stripped:
+                        self.get_logger().error(f'[LeRobot] {line_stripped}')
+                    else:
+                        self.get_logger().info(f'[LeRobot] {line_stripped}')
             
             # Wait for process to complete
             self.process.wait()
             
-            # Log completion
+            # Log completion based on exit code
             exit_code = self.process.returncode
             if exit_code == 0:
-                self.get_logger().info(f'LeRobot policy finished successfully')
+                self.get_logger().info('LeRobot policy finished successfully')
             elif exit_code == -15:  # SIGTERM
-                self.get_logger().info(f'LeRobot policy terminated by user')
+                self.get_logger().info('LeRobot policy terminated by user')
             elif exit_code == -9:  # SIGKILL
-                self.get_logger().warn(f'LeRobot policy was force-killed')
+                self.get_logger().warn('LeRobot policy was force-killed')
             else:
-                self.get_logger().error(f'LeRobot policy exited with code {exit_code}')
-                
-                # Read and log stderr if there was an error
-                if self.process.stderr:
-                    stderr_output = self.process.stderr.read()
-                    if stderr_output:
-                        self.get_logger().error(f'Error output: {stderr_output[:1000]}')
+                # Non-zero exit code indicates actual error
+                self.get_logger().error(f'LeRobot policy exited with error code {exit_code}')
                         
         except Exception as e:
             self.get_logger().error(f'Exception running LeRobot policy: {str(e)}')
