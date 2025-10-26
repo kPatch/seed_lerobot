@@ -43,8 +43,8 @@ def generate_launch_description():
     
     conda_base_arg = DeclareLaunchArgument(
         'conda_base_path',
-        default_value='~/anaconda3',
-        description='Path to conda base installation (e.g., ~/anaconda3 or ~/miniconda3)'
+        default_value='~/miniconda3',
+        description='Path to conda base installation (e.g., ~/miniconda3 or ~/anaconda3)'
     )
     
     shutdown_timeout_arg = DeclareLaunchArgument(

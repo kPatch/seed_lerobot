@@ -11,7 +11,7 @@ policy_controller_node:
   ros__parameters:
     # Conda environment configuration
     conda_env_name: "lerobot"
-    conda_base_path: "~/anaconda3"  # Change to ~/miniconda3 if using miniconda
+    conda_base_path: "~/miniconda3"  # Change to ~/anaconda3 if using anaconda
     
     # Process management
     shutdown_timeout: 5.0  # Seconds to wait before force kill

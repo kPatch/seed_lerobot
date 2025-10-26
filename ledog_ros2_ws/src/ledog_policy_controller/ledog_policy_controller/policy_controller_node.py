@@ -44,7 +44,7 @@ class PolicyControllerNode(Node):
         
         # Declare parameters
         self.declare_parameter('conda_env_name', 'lerobot')
-        self.declare_parameter('conda_base_path', '~/anaconda3')
+        self.declare_parameter('conda_base_path', '~/miniconda3')
         self.declare_parameter('shutdown_timeout', 5.0)
         self.declare_parameter('robot_id', 'follower_1')
         self.declare_parameter('robot_port', '/dev/ttyACM0')
