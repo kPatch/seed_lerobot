@@ -95,5 +95,5 @@ sudo usermod -a -G dialout $USER
 - 🚧 Script 05 (teleoperation) - Needs update
 - 🚧 Script 06 (diagnostics) - Needs update
 
-After testing, these scripts can be integrated into ROS2 nodes in `lekiwi_ros2_ws/`.
+After testing, these scripts can be integrated into ROS2 nodes in `ledog_ros2_ws/`.
 

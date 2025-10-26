@@ -52,7 +52,7 @@ Human control interfaces for the mobile base.
 ### Build Workspace
 
 ```bash
-cd lekiwi_ros2_ws
+cd ledog_ros2_ws
 
 # Install dependencies
 rosdep install --from-paths src --ignore-src -r -y
@@ -102,7 +102,7 @@ python scripts/03_test_single_motor.py --port /dev/ttyUSB0 --motor_id 7
 
 ### 2. ROS2 Development
 ```bash
-cd lekiwi_ros2_ws
+cd ledog_ros2_ws
 colcon build --packages-select lekiwi_base
 source install/setup.bash
 ros2 run lekiwi_base motor_controller_node
@@ -120,7 +120,7 @@ colcon test-result --verbose
 ## 📁 Workspace Structure
 
 ```
-lekiwi_ros2_ws/
+ledog_ros2_ws/
 ├── README.md                          # This file
 ├── src/
 │   ├── lekiwi_base/                   # Motor control package

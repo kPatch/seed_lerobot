@@ -24,7 +24,7 @@ python scripts/01_find_port.py
 
 ---
 
-### 🤖 [lekiwi_ros2_ws/](lekiwi_ros2_ws/)
+### 🤖 [ledog_ros2_ws/](ledog_ros2_ws/)
 
 **Production ROS2 Control System**
 
@@ -38,7 +38,7 @@ Full ROS2 workspace for LeKiwi mobile base control and integration.
 
 **Quick Start:**
 ```bash
-cd lekiwi_ros2_ws
+cd ledog_ros2_ws
 colcon build
 source install/setup.bash
 ros2 launch lekiwi_bringup robot.launch.py
@@ -46,7 +46,7 @@ ros2 launch lekiwi_bringup robot.launch.py
 
 **Use When:** Running the robot, integrating with navigation, production deployment
 
-**Documentation**: See [lekiwi_ros2_ws/README.md](lekiwi_ros2_ws/README.md)
+**Documentation**: See [ledog_ros2_ws/README.md](ledog_ros2_ws/README.md)
 
 ---
 
@@ -66,7 +66,7 @@ seed_lerobot/
 │   ├── scripts/                # Testing scripts (01-06)
 │   └── ros2_examples/          # ROS2 integration examples
 │
-└── lekiwi_ros2_ws/             # 🤖 ROS2 workspace
+└── ledog_ros2_ws/             # 🤖 ROS2 workspace
     ├── README.md               # Workspace documentation
     └── src/                    # ROS2 packages
         ├── lekiwi_base/        # Motor control
@@ -89,7 +89,7 @@ python scripts/04_test_all_motors.py --port /dev/ttyUSB0
 
 ### Phase 2: ROS2 Development & Operation
 ```bash
-cd lekiwi_ros2_ws
+cd ledog_ros2_ws
 colcon build && source install/setup.bash
 ros2 launch lekiwi_bringup robot.launch.py
 ```
@@ -97,8 +97,8 @@ ros2 launch lekiwi_bringup robot.launch.py
 
 ## 📋 Key Points
 
-- **Independent Packages**: No dependencies between motor_debugging and lekiwi_ros2_ws
-- **Different Purposes**: motor_debugging = testing tool, lekiwi_ros2_ws = production system
+- **Independent Packages**: No dependencies between motor_debugging and ledog_ros2_ws
+- **Different Purposes**: motor_debugging = testing tool, ledog_ros2_ws = production system
 - **Both Use Same SDK**: `lerobot[feetech]` installed independently in each
 - **Sequential Workflow**: Validate hardware first, then use ROS2 for operation
 
