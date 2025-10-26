@@ -25,3 +25,14 @@ matplotlib>=3.7.0
 # Optional: For data logging
 pandas>=2.0.0
 
+# Livekit
+setuptools
+typeguard
+python-dotenv
+pvporcupine==3.0.5
+pvrecorder==1.2.7
+livekit
+livekit-agents>=1.1.1
+livekit-plugins-openai
+livekit-plugins-silero
+livekit-plugins-noise-cancellation
