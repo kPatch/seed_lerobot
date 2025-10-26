@@ -23,6 +23,7 @@ import subprocess
 import threading
 import time
 import os
+import signal
 from typing import Optional
 
 import rclpy
@@ -161,13 +162,22 @@ class PolicyControllerNode(Node):
                 self.get_logger().warn(response.message)
                 return response
             
-            # Stop the process
+            # Stop the process and all its children
             try:
                 pid = self.process.pid
-                self.get_logger().info(f'Stopping policy process (PID: {pid})...')
+                pgid = os.getpgid(pid)
+                self.get_logger().info(f'Stopping policy process group (PGID: {pgid}, leader PID: {pid})...')
                 
-                # Try graceful termination first
-                self.process.terminate()
+                # Try graceful termination first - kill entire process group
+                try:
+                    os.killpg(pgid, signal.SIGTERM)
+                    self.get_logger().info(f'Sent SIGTERM to process group {pgid}')
+                except ProcessLookupError:
+                    # Process group already terminated
+                    response.success = False
+                    response.message = f'Process group {pgid} not found (already terminated)'
+                    self.get_logger().warn(response.message)
+                    return response
                 
                 try:
                     # Wait for graceful shutdown
@@ -177,13 +187,20 @@ class PolicyControllerNode(Node):
                     self.get_logger().info(response.message)
                     
                 except subprocess.TimeoutExpired:
-                    # Force kill if timeout expires
-                    self.get_logger().warn(f'Graceful shutdown timeout, force killing process {pid}')
-                    self.process.kill()
-                    self.process.wait()
-                    response.success = True
-                    response.message = f'Policy force-killed after timeout (PID: {pid})'
-                    self.get_logger().info(response.message)
+                    # Force kill entire process group if timeout expires
+                    self.get_logger().warn(f'Graceful shutdown timeout, force killing process group {pgid}')
+                    try:
+                        os.killpg(pgid, signal.SIGKILL)
+                        self.get_logger().info(f'Sent SIGKILL to process group {pgid}')
+                        self.process.wait()
+                        response.success = True
+                        response.message = f'Policy force-killed after timeout (PID: {pid})'
+                        self.get_logger().info(response.message)
+                    except ProcessLookupError:
+                        # Process group already gone
+                        response.success = True
+                        response.message = f'Process group {pgid} terminated (no longer found)'
+                        self.get_logger().info(response.message)
                     
             except Exception as e:
                 response.success = False
@@ -255,10 +272,11 @@ lerobot-record \
         self.get_logger().info(f'Conda base path: {self.conda_base}')
         
         try:
-            # Start the process
+            # Start the process with new session to allow process group killing
             self.process = subprocess.Popen(
                 cmd,
                 shell=True,
+                start_new_session=True,  # Create new process group for proper cleanup
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
@@ -266,7 +284,8 @@ lerobot-record \
                 universal_newlines=True
             )
             
-            self.get_logger().info(f'LeRobot policy started with PID: {self.process.pid}')
+            pgid = os.getpgid(self.process.pid)
+            self.get_logger().info(f'LeRobot policy started with PID: {self.process.pid}, PGID: {pgid}')
             
             # Stream output to ROS logs
             # Note: This will block until process completes
@@ -304,17 +323,33 @@ lerobot-record \
         """
         self.get_logger().info('Shutting down Policy Controller Node...')
         
-        # Stop any running process
+        # Stop any running process and its children
         with self.process_lock:
             if self.process is not None and self.process.poll() is None:
-                self.get_logger().info('Stopping running policy process...')
-                self.process.terminate()
                 try:
-                    self.process.wait(timeout=self.shutdown_timeout)
-                except subprocess.TimeoutExpired:
-                    self.get_logger().warn('Force killing policy process')
-                    self.process.kill()
-                    self.process.wait()
+                    pid = self.process.pid
+                    pgid = os.getpgid(pid)
+                    self.get_logger().info(f'Stopping running policy process group (PGID: {pgid})...')
+                    
+                    # Try graceful termination of entire process group
+                    try:
+                        os.killpg(pgid, signal.SIGTERM)
+                        self.get_logger().info(f'Sent SIGTERM to process group {pgid}')
+                    except ProcessLookupError:
+                        self.get_logger().info('Process group already terminated')
+                    
+                    try:
+                        self.process.wait(timeout=self.shutdown_timeout)
+                    except subprocess.TimeoutExpired:
+                        self.get_logger().warn(f'Force killing process group {pgid}')
+                        try:
+                            os.killpg(pgid, signal.SIGKILL)
+                            self.get_logger().info(f'Sent SIGKILL to process group {pgid}')
+                            self.process.wait()
+                        except ProcessLookupError:
+                            self.get_logger().info('Process group already terminated')
+                except Exception as e:
+                    self.get_logger().error(f'Error during cleanup: {str(e)}')
         
         super().destroy_node()
 
