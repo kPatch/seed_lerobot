@@ -1,0 +1,50 @@
+# LeKiwi Mobile Base Configuration
+
+robot:
+  type: "lekiwi"
+  name: "LeKiwi Mobile Base"
+  
+motors:
+  brand: "feetech"
+  model: "sts3215"
+  baudrate: 1000000
+  
+  # Wheel motor IDs
+  wheels:
+    motor_1: 7
+    motor_2: 8
+    motor_3: 9
+  
+  # Optional: Arm motor IDs (if equipped)
+  arm:
+    shoulder: 1
+    elbow: 2
+    wrist: 3
+    gripper: 4
+
+specifications:
+  voltage: 12  # Volts
+  rated_torque: 10  # kg·cm
+  rated_current: 900  # mA
+  gear_ratio: "1:345"
+
+safety_limits:
+  max_temperature: 70  # Celsius
+  max_current: 1000  # mA (with 10% safety margin)
+  min_voltage: 10.5  # Volts
+  max_voltage: 13.0  # Volts
+
+testing:
+  # Position limits for testing (in motor units, 0-4095 for STS servos)
+  position_min: 1024
+  position_center: 2048
+  position_max: 3072
+  
+  # Movement parameters for testing
+  test_speed: 1000  # Speed units
+  test_acceleration: 50  # Acceleration units
+  
+  # Diagnostic intervals
+  temperature_check_interval: 5  # seconds
+  feedback_update_rate: 10  # Hz
+

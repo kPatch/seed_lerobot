@@ -1,0 +1,27 @@
+# LeRobot with Feetech motor support
+lerobot[feetech]
+
+# Feetech servo SDK
+feetech-servo-sdk>=1.0.0
+
+# Serial communication
+pyserial>=3.5
+
+# Configuration management
+pyyaml>=6.0
+
+# Numpy for calculations
+numpy>=1.24.0
+
+# For terminal UI and better output
+rich>=13.0.0
+
+# For keyboard control in teleoperation
+pynput>=1.7.6
+
+# Optional: For plotting diagnostics
+matplotlib>=3.7.0
+
+# Optional: For data logging
+pandas>=2.0.0
+
