@@ -9,12 +9,14 @@ The LeRobot Policy Controller solves the problem of managing the `lerobot-record
 ### Key Features
 
 - ✅ **Service-based control** - Start, stop, and query policy status via ROS2 services
-- ✅ **Process lifecycle management** - Proper handling of long-running processes
+- ✅ **Process lifecycle management** - Proper handling of long-running processes with process group killing
 - ✅ **Conda environment support** - Activates the correct conda environment before execution
-- ✅ **Graceful shutdown** - Attempts graceful termination before force-killing
+- ✅ **Graceful shutdown** - Attempts graceful termination before force-killing entire process tree
 - ✅ **Status monitoring** - Always know if the policy is running, idle, or stopped
 - ✅ **Thread-safe** - Safe concurrent access to process state
-- ✅ **Logging** - Streams LeRobot output to ROS2 logs
+- ✅ **Smart logging** - Streams LeRobot output to ROS2 logs with proper warning/error classification
+- ✅ **Parameterized** - Configurable camera indices and automatic timestamp generation
+- ✅ **Unique datasets** - Each recording gets a timestamped dataset name
 
 ## Architecture
 
@@ -202,11 +204,14 @@ The node accepts the following parameters:
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `conda_env_name` | string | `lerobot` | Name of the conda environment containing LeRobot |
-| `conda_base_path` | string | `~/anaconda3` | Path to conda base installation |
+| `conda_base_path` | string | `~/miniconda3` | Path to conda base installation |
 | `shutdown_timeout` | double | `5.0` | Seconds to wait for graceful shutdown before force kill |
 | `robot_id` | string | `follower_1` | Robot ID for LeRobot recording |
 | `robot_port` | string | `/dev/ttyACM0` | Serial port for robot communication |
 | `robot_type` | string | `so100_follower` | Type of robot for LeRobot |
+| `camera_top_index` | int | `2` | Camera device index for top camera |
+| `camera_left_index` | int | `0` | Camera device index for left camera |
+| `dataset_base_repo_id` | string | `zhoumiaosen/eval_policy_act` | Base dataset repository ID (timestamp appended automatically) |
 
 ### Setting Parameters
 
@@ -214,7 +219,10 @@ The node accepts the following parameters:
 ```bash
 ros2 launch ledog_policy_controller policy_controller.launch.py \
     conda_env_name:=my_env \
-    conda_base_path:=~/miniconda3
+    conda_base_path:=~/miniconda3 \
+    camera_top_index:=4 \
+    camera_left_index:=0 \
+    dataset_base_repo_id:=myuser/my_dataset_
 ```
 
 #### Via parameter file:
@@ -223,11 +231,14 @@ ros2 launch ledog_policy_controller policy_controller.launch.py \
 policy_controller_node:
   ros__parameters:
     conda_env_name: "lerobot"
-    conda_base_path: "~/anaconda3"
+    conda_base_path: "~/miniconda3"
     shutdown_timeout: 5.0
     robot_id: "follower_1"
     robot_port: "/dev/ttyACM0"
     robot_type: "so100_follower"
+    camera_top_index: 2
+    camera_left_index: 0
+    dataset_base_repo_id: "zhoumiaosen/eval_policy_act"
 ```
 
 ```bash
@@ -237,14 +248,27 @@ ros2 run ledog_policy_controller policy_controller_node \
 
 ## LeRobot Command
 
-The node executes the following hardcoded LeRobot command:
+The node executes a LeRobot recording command with **parameterized values**:
+
+### Dynamic Parameters
+
+The following values are automatically generated or configurable via ROS2 parameters:
+
+- **Camera indices**: `camera_top_index` (default: `2`) and `camera_left_index` (default: `0`)
+- **Dataset name**: `dataset_base_repo_id` (default: `zhoumiaosen/eval_policy_act`) + **timestamp**
+  - Timestamp format: `YYYYMMDD_HHMMSS`
+  - Example: `zhoumiaosen/eval_policy_act20251026_143052`
+
+### Example Generated Command
+
+When you start a policy, the node generates a command like:
 
 ```bash
 lerobot-record \
     --robot.id=follower_1 \
     --robot.port=/dev/ttyACM0 \
     --robot.type=so100_follower \
-    --dataset.repo_id=zhoumiaosen/eval_policy_act1 \
+    --dataset.repo_id=zhoumiaosen/eval_policy_act20251026_143052 \
     --dataset.num_episodes=2 \
     --dataset.single_task="Scoop the poop" \
     --display_data=true \
@@ -255,7 +279,23 @@ lerobot-record \
     --dataset.episode_time_s=120
 ```
 
-**Note:** To modify the command, edit the `_run_policy_thread()` method in `policy_controller_node.py`.
+### Customizing Camera Indices
+
+To use different camera devices:
+
+```bash
+ros2 launch ledog_policy_controller policy_controller.launch.py \
+    camera_top_index:=4 \
+    camera_left_index:=2
+```
+
+Or find your camera indices:
+```bash
+ls /dev/video*
+v4l2-ctl --list-devices
+```
+
+**Note:** Each recording session automatically gets a unique timestamp, preventing dataset name conflicts.
 
 ## Workflow Examples
 

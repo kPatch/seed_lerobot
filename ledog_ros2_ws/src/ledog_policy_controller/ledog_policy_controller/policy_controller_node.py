@@ -24,6 +24,7 @@ import threading
 import time
 import os
 import signal
+from datetime import datetime
 from typing import Optional
 
 import rclpy
@@ -50,6 +51,9 @@ class PolicyControllerNode(Node):
         self.declare_parameter('robot_id', 'follower_1')
         self.declare_parameter('robot_port', '/dev/ttyACM0')
         self.declare_parameter('robot_type', 'so100_follower')
+        self.declare_parameter('camera_top_index', 2)
+        self.declare_parameter('camera_left_index', 0)
+        self.declare_parameter('dataset_base_repo_id', 'zhoumiaosen/eval_policy_act')
         
         # Get parameters
         self.conda_env = self.get_parameter('conda_env_name').value
@@ -57,6 +61,9 @@ class PolicyControllerNode(Node):
             self.get_parameter('conda_base_path').value
         )
         self.shutdown_timeout = self.get_parameter('shutdown_timeout').value
+        self.camera_top_index = self.get_parameter('camera_top_index').value
+        self.camera_left_index = self.get_parameter('camera_left_index').value
+        self.dataset_base_repo_id = self.get_parameter('dataset_base_repo_id').value
         
         # Process management
         self.process: Optional[subprocess.Popen] = None
@@ -248,19 +255,22 @@ class PolicyControllerNode(Node):
         Run the LeRobot policy command in a separate thread.
         This method blocks until the process completes or is terminated.
         """
-        # Build the lerobot-record command
-        # Note: This is the hardcoded command as specified
+        # Generate timestamp for dataset naming (format: YYYYMMDD_HHMMSS)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        dataset_repo_id = f"{self.dataset_base_repo_id}{timestamp}"
+        
+        # Build the lerobot-record command with parameterized values
         cmd = f"""bash -c 'source {self.conda_base}/etc/profile.d/conda.sh && \
 conda activate {self.conda_env} && \
 lerobot-record \
     --robot.id=follower_1 \
     --robot.port=/dev/ttyACM0 \
     --robot.type=so100_follower \
-    --dataset.repo_id=zhoumiaosen/eval_policy_act1 \
+    --dataset.repo_id={dataset_repo_id} \
     --dataset.num_episodes=2 \
     --dataset.single_task="Scoop the poop" \
     --display_data=true \
-    --robot.cameras="{{ top: {{\\"type\\": \\"opencv\\", \\"index_or_path\\": 2, \\"width\\": 640, \\"height\\": 480, \\"fps\\": 30}}, left: {{\\"type\\": \\"opencv\\", \\"index_or_path\\": 0, \\"width\\": 640, \\"height\\": 480, \\"fps\\": 30}} }}" \
+    --robot.cameras="{{ top: {{\\"type\\": \\"opencv\\", \\"index_or_path\\": {self.camera_top_index}, \\"width\\": 640, \\"height\\": 480, \\"fps\\": 30}}, left: {{\\"type\\": \\"opencv\\", \\"index_or_path\\": {self.camera_left_index}, \\"width\\": 640, \\"height\\": 480, \\"fps\\": 30}} }}" \
     --policy.device=cuda \
     --policy.path=ishandotsh/poopascoopa_act \
     --dataset.fps=30 \
@@ -270,6 +280,8 @@ lerobot-record \
         self.get_logger().info('Starting LeRobot policy process...')
         self.get_logger().info(f'Conda environment: {self.conda_env}')
         self.get_logger().info(f'Conda base path: {self.conda_base}')
+        self.get_logger().info(f'Dataset repo ID: {dataset_repo_id}')
+        self.get_logger().info(f'Camera indices - Top: {self.camera_top_index}, Left: {self.camera_left_index}')
         
         try:
             # Start the process with new session to allow process group killing

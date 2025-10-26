@@ -71,6 +71,24 @@ def generate_launch_description():
         description='Type of robot for LeRobot'
     )
     
+    camera_top_index_arg = DeclareLaunchArgument(
+        'camera_top_index',
+        default_value='2',
+        description='Camera device index for top camera (e.g., 0, 2, /dev/video0)'
+    )
+    
+    camera_left_index_arg = DeclareLaunchArgument(
+        'camera_left_index',
+        default_value='0',
+        description='Camera device index for left camera (e.g., 0, 2, /dev/video0)'
+    )
+    
+    dataset_base_repo_id_arg = DeclareLaunchArgument(
+        'dataset_base_repo_id',
+        default_value='zhoumiaosen/eval_policy_act',
+        description='Base dataset repository ID (timestamp will be appended automatically)'
+    )
+    
     # Create the policy controller node
     policy_controller_node = Node(
         package='ledog_policy_controller',
@@ -85,6 +103,9 @@ def generate_launch_description():
             'robot_id': LaunchConfiguration('robot_id'),
             'robot_port': LaunchConfiguration('robot_port'),
             'robot_type': LaunchConfiguration('robot_type'),
+            'camera_top_index': LaunchConfiguration('camera_top_index'),
+            'camera_left_index': LaunchConfiguration('camera_left_index'),
+            'dataset_base_repo_id': LaunchConfiguration('dataset_base_repo_id'),
         }]
     )
     
@@ -95,6 +116,9 @@ def generate_launch_description():
         robot_id_arg,
         robot_port_arg,
         robot_type_arg,
+        camera_top_index_arg,
+        camera_left_index_arg,
+        dataset_base_repo_id_arg,
         policy_controller_node,
     ])
 

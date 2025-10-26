@@ -20,4 +20,11 @@ policy_controller_node:
     robot_id: "follower_1"
     robot_port: "/dev/ttyACM0"
     robot_type: "so100_follower"
+    
+    # Camera configuration
+    camera_top_index: 2    # Device index for top camera
+    camera_left_index: 0   # Device index for left camera
+    
+    # Dataset configuration
+    dataset_base_repo_id: "zhoumiaosen/eval_policy_act"  # Timestamp will be appended automatically
 
