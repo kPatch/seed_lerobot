@@ -218,7 +218,7 @@ def generate_report(log_file):
         currents = [int(r['current']) for r in records]
         
         table.add_row(
-            motor_id,
+            str(motor_id),
             f"{sum(temps)/len(temps):.1f}",
             f"{max(temps):.1f}",
             f"{sum(currents)/len(currents):.0f}",

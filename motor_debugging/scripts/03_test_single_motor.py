@@ -97,7 +97,7 @@ def run_diagnostics(port, motor_id):
     
     # Check parameters against limits
     checks = [
-        ("Position", state["position"], "4095 units", "✓ OK"),
+        ("Position", f"{state['position']}", "0-4095", "✓ OK"),
         ("Temperature", f"{state['temperature']}°C", "< 70°C", 
          "✓ OK" if state["temperature"] < 70 else "⚠ HIGH"),
         ("Voltage", f"{state['voltage']}V", "10.5-13.0V",
