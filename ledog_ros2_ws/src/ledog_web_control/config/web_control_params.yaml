@@ -1,0 +1,39 @@
+# LeRobot Web Control - Default Parameters
+# 
+# This configuration file contains default parameters for the web control node.
+# The node connects to a signaling server as a producer in a specific room.
+# Override these parameters in your launch file or via command line.
+
+web_control_node:
+  ros__parameters:
+    # Signaling Server Configuration
+    signalling_server: "wss://localhost:8000/ws"  # WebSocket URL for signaling server
+    room_id: "default"                            # Room ID to join
+    robot_name: ""                                # Robot name (defaults to hostname if empty)
+    
+    # ROS2 Topic Configuration
+    cmd_vel_topic: "/cmd_vel"                     # Velocity command topic for Go2
+    arm_joint_topic: "/arm/joint_commands"        # Joint command topic for LeRobot arm
+    
+    # Control Loop Configuration
+    ticks_per_second: 30                          # Main control loop frequency (Hz)
+    feedback_rate: 10.0                           # Rate to send feedback to clients (Hz)
+    heartbeat_frequency: 3.0                      # Heartbeat frequency (seconds)
+    command_timeout: 0.5                          # Velocity command timeout (seconds)
+    
+    # Velocity Limits (Go2 Mobile Platform)
+    max_linear_speed: 0.5                         # Maximum linear speed (m/s)
+    max_angular_speed: 1.0                        # Maximum angular speed (rad/s)
+    
+    # Arm Joint Configuration (LeRobot)
+    # Joint position limits (Feetech STS3215 motors: 0-4095 range)
+    arm_joint_limits_min: [0, 0, 0, 0, 0]        # Minimum positions
+    arm_joint_limits_max: [4095, 4095, 4095, 4095, 4095]  # Maximum positions
+    
+    # Joint names for the LeRobot arm
+    arm_joint_names: 
+      - "joint_1"
+      - "joint_2"
+      - "joint_3"
+      - "joint_4"
+      - "joint_5"

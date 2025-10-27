@@ -1,0 +1,6 @@
+# Request to execute a single dance command
+string command_name
+---
+# Response
+bool success
+string message

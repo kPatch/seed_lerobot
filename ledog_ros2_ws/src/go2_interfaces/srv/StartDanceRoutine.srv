@@ -1,0 +1,8 @@
+# Start a dance routine with multiple commands
+string[] command_sequence      # Commands to execute in order: ["Hello", "Dance1", "FrontFlip"]
+string routine_name           # Optional name for the routine (empty = auto-generated)
+---
+# Response
+bool success
+string message
+string routine_name           # Final routine name (generated if not provided)
